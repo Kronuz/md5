@@ -1,5 +1,7 @@
 # md5
 
+[![CI](https://github.com/Kronuz/md5/actions/workflows/ci.yml/badge.svg)](https://github.com/Kronuz/md5/actions/workflows/ci.yml)
+
 A small C++20 implementation of the MD5 message-digest function, used here as a
 fast content fingerprint / checksum for content-addressing, not as a security
 primitive. Extracted from [Xapiand](https://github.com/Kronuz/Xapiand).
