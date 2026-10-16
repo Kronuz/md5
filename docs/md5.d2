@@ -1,0 +1,16 @@
+# md5: bytes in any chunks, 64-byte blocks, a 16-byte digest.
+# Render: d2 --layout elk --sketch --theme 302 docs/md5.d2 docs/md5.svg
+direction: right
+
+input: bytes {
+  style.multiple: true
+  label: "add(data, n)\nin any chunks"
+}
+blocks: 64-byte blocks {
+  label: "64-byte blocks\nfour rounds"
+}
+digest: digest {
+  label: "getHash()\n32 hex chars or 16 bytes"
+}
+input -> blocks
+blocks -> digest: "padding + length"

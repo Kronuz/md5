@@ -14,7 +14,8 @@ test/test.cc                 Runnable smoke test: RFC 1321 vectors, (void*,size)
 examples/demo.cc             A runnable tour (not a test).
 CMakeLists.txt               Compiled library `md5` (+ alias md5::md5); FetchContent endian; CTest test `md5`.
 LICENSE                      MIT, Copyright (c) 2015-2019 Dubalu LLC; portions (c) 2014,2015 Stephan Brumme.
-README.md                    What it is, install, usage, API.
+README.md                    What it is, install, quick start.
+docs/API.md                  The API reference.
 ARCHITECTURE.md              Internal design of the block transform, padding, endianness, finalize-without-consume.
 ```
 
