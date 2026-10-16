@@ -7,7 +7,9 @@
 // 64-byte blocks.
 //
 // Build via CMake: cmake -B build && cmake --build build && ctest --test-dir build
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdio>
 #include <string>
 #include <string_view>
@@ -149,7 +151,48 @@ static void test_long_input() {
 }
 
 
+// Every input offset 0..15, one-shot and streamed in odd chunk sizes, across padding
+// boundaries: caller buffers need no alignment. Digests from Python's hashlib.
+static void test_unaligned_input() {
+	struct Vector { std::size_t length; const char *digest; };
+	const Vector vectors[] = {
+		{0, "d41d8cd98f00b204e9800998ecf8427e"},
+		{1, "13c8ffd977013703a701cf8e11deac65"},
+		{55, "d872aa0473a24da995ce4ac518ade767"},
+		{56, "e23567645846677c205de80f9779081b"},
+		{63, "4775b66278a8fc132ff80923378216cd"},
+		{64, "71e123b70c7aa64826fcfe472694cd1c"},
+		{65, "5949948f26e35203661075214faa3966"},
+		{119, "87f72c7241c5fe218bb4df8c0aba3232"},
+		{120, "bf240b8b7407fba3805adeec63a03b77"},
+		{127, "520bdc2dbab7c25d64263ffb242d9e98"},
+		{128, "3e93b378458b77da96b2357c3bda8cc2"},
+		{129, "d1ae06bbf9128955a34bedb6231eee62"},
+		{1024, "d4883a545d61557ce12ff4e95350e997"},
+		{4096, "efc404fa609a799c7801273de6d65e84"},
+	};
+	alignas(64) unsigned char storage[4096 + 16]{};
+	for (unsigned offset = 0; offset < 16; ++offset) {
+		for (unsigned i = 0; i < 4096; ++i) storage[offset + i] = static_cast<unsigned char>(i * 37 + 11);
+		for (const auto &v : vectors) {
+			MD5 one;
+			assert(one(storage + offset, v.length) == v.digest);
+			for (unsigned chunk : {1u, 3u, 63u, 64u, 65u, 129u}) {
+				MD5 streamed;
+				std::size_t position = 0;
+				while (position < v.length) {
+					auto count = std::min<std::size_t>(chunk, v.length - position);
+					streamed.add(storage + offset + position, count);
+					position += count;
+				}
+				assert(streamed.getHash() == v.digest);
+			}
+		}
+	}
+}
+
 int main() {
+	test_unaligned_input();
 	test_rfc1321_vectors();
 	test_void_size_overload();
 	test_streaming();

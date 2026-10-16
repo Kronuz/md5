@@ -102,8 +102,13 @@ void MD5::processBlock(const void* data)
 	uint32_t c = m_hash[2];
 	uint32_t d = m_hash[3];
 
-	// data represented as 16x 32-bit words
-	const uint32_t* words = (uint32_t*) data;
+	// data represented as 16x 32-bit words; caller buffers may be unaligned and need not
+	// contain uint32_t objects, so load each word with memcpy
+	const auto* input = static_cast<const unsigned char*>(data);
+	uint32_t words[16];
+	for (int i = 0; i < 16; ++i) {
+		std::memcpy(&words[i], input + i * sizeof(uint32_t), sizeof(uint32_t));
+	}
 
 	// computations are little endian, swap data if necessary
 #if __BYTE_ORDER == __BIG_ENDIAN
