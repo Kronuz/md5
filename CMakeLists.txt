@@ -40,6 +40,13 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   target_link_libraries(md5_test PRIVATE md5)
   add_test(NAME md5 COMMAND md5_test)
 
+  # Legacy MD5 string API timing: cmake -B build -DMD5_BUILD_BENCH=ON
+  option(MD5_BUILD_BENCH "Build the hex-string benchmark" OFF)
+  if(MD5_BUILD_BENCH)
+    add_executable(md5_hex_bench bench/hex_bench.cc)
+    target_link_libraries(md5_hex_bench PRIVATE md5)
+  endif()
+
   # A runnable tour of the library (not a test): build & run ./build/md5_demo
   add_executable(md5_demo examples/demo.cc)
   target_link_libraries(md5_demo PRIVATE md5)

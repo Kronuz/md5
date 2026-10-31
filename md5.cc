@@ -365,14 +365,14 @@ std::string MD5::getHash()
 	unsigned char rawHash[HashBytes];
 	getHash(rawHash);
 
-	// convert to hex string
-	std::string result;
-	result.reserve(2 * HashBytes);
+	// convert to hex string: size once, write two characters per byte
+	static const char dec2hex[16+1] = "0123456789abcdef";
+	std::string result(2 * HashBytes, '\0');
+	char* out = result.data();
 	for (unsigned char i : rawHash)
 	{
-		static const char dec2hex[16+1] = "0123456789abcdef";
-		result += dec2hex[(i >> 4) & 15];
-		result += dec2hex[ i       & 15];
+		*out++ = dec2hex[i >> 4];
+		*out++ = dec2hex[i & 15];
 	}
 
 	return result;

@@ -191,6 +191,45 @@ static void test_unaligned_input() {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Differential check of the hex string against a frozen copy of the original
+// byte-at-a-time conversion, for every length up to 300 (all padding shapes),
+// plus streaming getHash() then continued add().
+// ---------------------------------------------------------------------------
+
+static std::string old_hex(const unsigned char* raw, size_t n) {
+	std::string result;
+	result.reserve(2 * n);
+	for (size_t k = 0; k < n; ++k) {
+		static const char dec2hex[16+1] = "0123456789abcdef";
+		result += dec2hex[(raw[k] >> 4) & 15];
+		result += dec2hex[ raw[k]       & 15];
+	}
+	return result;
+}
+
+static void test_hex_matches_old() {
+	unsigned state = 12345;
+	std::string data;
+	for (size_t len = 0; len <= 300; ++len) {
+		MD5 h, g;
+		std::string hex = h(data.data(), data.size());
+		unsigned char raw[MD5::HashBytes];
+		g.add(data.data(), data.size());
+		g.getHash(raw);
+		assert(hex == old_hex(raw, MD5::HashBytes));
+		assert(hex.size() == 2 * MD5::HashBytes);
+		// getHash() leaves the stream appendable.
+		g.add("tail", 4);
+		MD5 ref;
+		assert(g.getHash() == ref(data + "tail"));
+		state = state * 1664525u + 1013904223u;
+		data.push_back(static_cast<char>(state >> 24));
+	}
+	std::printf("md5 hex matches the frozen byte-at-a-time conversion for lengths 0..300\n");
+}
+
+
 int main() {
 	test_unaligned_input();
 	test_rfc1321_vectors();
@@ -200,6 +239,7 @@ int main() {
 	test_reset_reuse();
 	test_embedded_nul();
 	test_long_input();
+	test_hex_matches_old();
 	std::printf("all md5 tests passed\n");
 	return 0;
 }

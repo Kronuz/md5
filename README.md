@@ -61,6 +61,12 @@ shows streaming matching the one-shot digest.
 - ⚠️ Unaligned buffers are read through a misaligned pointer until a pending fix
   lands; see [docs/API.md](docs/API.md#caveats).
 
+## ⚡ Performance note
+
+The hex string is sized once and filled two characters per byte instead of appended one character at a time:
+`MD5(16 B)` to a 32-character string went from about 161 ns to 115 ns (Apple M4 Pro, -O3). The digest bytes are
+unchanged; the compression function is the same scalar code. `bench/hex_bench.cc` (`-DMD5_BUILD_BENCH=ON`).
+
 ## 📚 Documentation
 
 - [docs/API.md](docs/API.md): the `MD5` class and caveats.
