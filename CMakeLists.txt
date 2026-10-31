@@ -6,8 +6,8 @@ include(FetchContent)
 # --- Dependency: endian ---
 # md5.cc includes "endian.hh" for the platform byte-order macros (__BYTE_ORDER /
 # __BIG_ENDIAN), used to decide whether the 32-bit words need byte-swapping. That
-# header lives in the sibling endian library, pulled in here so the include
-# resolves. We track its tip with GIT_TAG main, like the rest of the family.
+# header lives in the sibling endian library, pulled in here at a pinned commit
+# so the include resolves.
 FetchContent_Declare(
   endian
   GIT_REPOSITORY https://github.com/Kronuz/endian.git

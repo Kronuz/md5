@@ -22,6 +22,5 @@ calling it twice yields the same digest and you can keep adding afterward.
 
 - MD5 is cryptographically broken: collisions are cheap to produce. Use it only
   where an existing format requires MD5, never for integrity against an adversary.
-- Hashing a buffer that is not 4-byte aligned currently reads it through a
-  misaligned `uint32_t` pointer; copy into an aligned buffer first until the fix
-  `sha256` received is ported.
+- Input buffers need no alignment: `processBlock()` loads each 32-bit word with
+  `memcpy`. `test_unaligned_input` covers offsets 0 to 15, one-shot and streamed.

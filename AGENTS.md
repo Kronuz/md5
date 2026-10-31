@@ -8,15 +8,17 @@ easy to fall into.
 ## Repo map
 
 ```
-md5.h                        Declares the MD5 class (call operators, add(), getHash(), reset()) and its private state. Header. Verbatim from Xapiand.
-md5.cc                       The implementation: block transform, streaming buffer, padding, length encoding, hex formatting. Includes "endian.hh" for the byte-order macros. From Xapiand, one include changed.
-test/test.cc                 Runnable smoke test: RFC 1321 vectors, (void*,size) overload, streaming, repeatable getHash(), reset/reuse, embedded NUL, long multi-block input.
+md5.h                        Declares the MD5 class (call operators, add(), getHash(), reset()) and its private state. Header. Same as Xapiand's.
+md5.cc                       The implementation: block transform, streaming buffer, padding, length encoding, hex formatting. Includes "endian.hh" for the byte-order macros.
+test/test.cc                 Runnable smoke test: RFC 1321 vectors, (void*,size) overload, streaming, repeatable getHash(), reset/reuse, embedded NUL, long multi-block input, hex string against a frozen byte-at-a-time conversion.
+bench/hex_bench.cc           ns per MD5(data) call with its hex string (md5_hex_bench, -DMD5_BUILD_BENCH=ON).
 examples/demo.cc             A runnable tour (not a test).
 CMakeLists.txt               Compiled library `md5` (+ alias md5::md5); FetchContent endian; CTest test `md5`.
 LICENSE                      MIT, Copyright (c) 2015-2019 Dubalu LLC; portions (c) 2014,2015 Stephan Brumme.
 README.md                    What it is, install, quick start.
 docs/API.md                  The API reference.
 ARCHITECTURE.md              Internal design of the block transform, padding, endianness, finalize-without-consume.
+CHANGELOG.md                 Behavior and performance changes, newest first.
 ```
 
 This is not header-only. `md5.cc` must be compiled and linked; the header only
@@ -28,8 +30,8 @@ declares the class. The CMake target links `endian` so `"endian.hh"` resolves.
 cmake -B build && cmake --build build && ctest --test-dir build
 ```
 
-The first configure fetches `endian` over the network (FetchContent,
-`GIT_TAG main`). Expected output ends with `all md5 tests passed`, exit 0. The
+The first configure fetches `endian` over the network (FetchContent, at
+the commit `CMakeLists.txt` pins). Expected output ends with `all md5 tests passed`, exit 0. The
 test target is `md5_test`; the registered CTest name is `md5`. The test and demo
 are only added when this repo is the top-level project (CMakeLists.txt), so
 consumers vendoring it via `FetchContent` won't build them.
@@ -40,9 +42,8 @@ consumers vendoring it via `FetchContent` won't build them.
 / `__BIG_ENDIAN`), used to decide whether the 32-bit words need byte-swapping on a
 big-endian host. That header lives in the sibling
 [endian](https://github.com/Kronuz/endian) library, pulled in by CMake and linked
-`PUBLIC` so the include path resolves. We track its tip with `GIT_TAG main`, like
-the rest of the family. This is the library's only dependency; there was no
-`log.h` / opts / config / `THROW` coupling in the original.
+`PUBLIC` so the include path resolves. This is the library's only dependency;
+there is no `log.h` / opts / config / `THROW` coupling.
 
 ## Not cryptography
 
@@ -84,8 +85,8 @@ strength.
 ## Traps
 
 - **`md5.h` declares `operator()(std::string_view)` but does not itself include
-  `<string_view>`.** This is verbatim from Xapiand, where a transitive include
-  supplied it. `md5.cc` includes `<string>` (via `md5.h`) which on the toolchains
+  `<string_view>`.** Xapiand's header is the same; a transitive include supplies
+  it there. `md5.cc` includes `<string>` (via `md5.h`) which on the toolchains
   we build with also drags in `std::string_view`; the build is clean. If you ever
   see a `std::string_view` not-declared error in a stricter toolchain, add
   `#include <string_view>` to `md5.h` rather than working around it elsewhere.
@@ -101,9 +102,8 @@ strength.
 ## Standalone vs. Xapiand
 
 This is a standalone extraction from
-[Xapiand](https://github.com/Kronuz/Xapiand). `md5.h` and `md5.cc` were copied
-verbatim; the only change on extraction was the one local include in `md5.cc`,
-from `"endian.h"` to `"endian.hh"`, so it resolves against the standalone endian
-library through CMake instead of Xapiand's source tree. There is no other source
-decoupling delta. Keep it that way; any change here should be reconcilable with
+[Xapiand](https://github.com/Kronuz/Xapiand). `md5.h` matches upstream. `md5.cc`
+differs in two places: it includes `"endian.hh"` (Xapiand's is `"endian.h"`), so
+it resolves against the standalone endian library through CMake, and it builds
+the hex string in one sized buffer. Keep any change here reconcilable with
 upstream as a plain edit.

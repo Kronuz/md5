@@ -40,9 +40,9 @@ state (four 32-bit words `a b c d`, seeded with the RFC 1321 constants in
 
 ## Endianness: the one dependency
 
-MD5 is defined on little-endian 32-bit words. `processBlock()` reinterprets the
-64-byte block as sixteen `uint32_t` and, on a big-endian host, byte-swaps each
-word through a `LITTLEENDIAN(x)` macro before mixing it in. That decision is
+MD5 is defined on little-endian 32-bit words. `processBlock()` loads the 64-byte
+block as sixteen `uint32_t` with `memcpy` (so the caller's buffer needs no
+alignment) and, on a big-endian host, byte-swaps each word through a `LITTLEENDIAN(x)` macro before mixing it in. That decision is
 gated on `__BYTE_ORDER == __BIG_ENDIAN`.
 
 Those macros are exactly what the sibling [endian](https://github.com/Kronuz/endian)
@@ -61,8 +61,8 @@ So `getHash(unsigned char[16])` saves the four state words, calls
 `processBuffer()`, extracts the 16 digest bytes (each word written low byte
 first), and then restores the saved words. The accumulated state is left exactly
 as it was, so `getHash()` is repeatable and `add()` can continue afterward. The
-hex form, `getHash()` returning a `std::string`, is a thin wrapper that formats
-those 16 bytes as 32 lowercase hex characters.
+hex form, `getHash()` returning a `std::string`, sizes a 32-character string once
+and fills it with two lowercase hex characters per digest byte.
 
 ## Why this shape
 

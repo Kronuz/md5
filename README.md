@@ -16,6 +16,8 @@ that require MD5, such as `Content-MD5` or legacy checksums.
 
 - **One call or streaming.** `md5("abc")`, or `add()` chunks and `getHash()`.
 - **Hex or raw.** 32 lowercase hex characters, or 16 bytes into your buffer.
+- **Any input.** Size-based, so embedded NULs count; buffers at any alignment are
+  read safely.
 - **Repeatable reads.** `getHash()` finalizes a copy, so you can keep adding.
 - **Checked** against the RFC 1321 test suite.
 
@@ -58,20 +60,23 @@ shows streaming matching the one-shot digest.
 - ❌ Security of any kind: MD5 collisions are cheap to produce. Use
   [sha256](https://github.com/Kronuz/sha256) for fingerprints, and a reviewed
   cryptography library for anything adversarial.
-- ⚠️ Unaligned buffers are read through a misaligned pointer until a pending fix
-  lands; see [docs/API.md](docs/API.md#caveats).
 
-## ⚡ Performance note
+## ⚡ Performance
 
-The hex string is sized once and filled two characters per byte instead of appended one character at a time:
-`MD5(16 B)` to a 32-character string went from about 161 ns to 115 ns (Apple M4 Pro, -O3). The digest bytes are
-unchanged; the compression function is the same scalar code. `bench/hex_bench.cc` (`-DMD5_BUILD_BENCH=ON`).
+The compression function is scalar C++. The hex string is sized once and filled
+two characters per byte. `MD5` on a 16-byte input, 32-character hex string
+included, takes about 115 ns on an Apple M4 Pro (-O3). Run the benchmark with:
+
+```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DMD5_BUILD_BENCH=ON && cmake --build build && ./build/md5_hex_bench
+```
 
 ## 📚 Documentation
 
 - [docs/API.md](docs/API.md): the `MD5` class and caveats.
 - [ARCHITECTURE.md](ARCHITECTURE.md): buffering, the rounds, and finalization.
 - [AGENTS.md](AGENTS.md): repository map and invariants.
+- [CHANGELOG.md](CHANGELOG.md): behavior and performance changes.
 
 ## 🛠️ Building and testing
 
