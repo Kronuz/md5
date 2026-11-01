@@ -19,7 +19,8 @@ that require MD5, such as `Content-MD5` or legacy checksums.
 - **Any input.** Size-based, so embedded NULs count; buffers at any alignment are
   read safely.
 - **Repeatable reads.** `getHash()` finalizes a copy, so you can keep adding.
-- **Checked** against the RFC 1321 test suite.
+- **Checked** against the RFC 1321 test suite and, where OpenSSL is installed, against
+  OpenSSL's MD5 on every length to 1100, random lengths to 70,000, and streams past 512 MiB.
 
 ## 📦 Installation
 
@@ -64,8 +65,37 @@ shows streaming matching the one-shot digest.
 ## ⚡ Performance
 
 The compression function is scalar C++. The hex string is sized once and filled
-two characters per byte. `MD5` on a 16-byte input, 32-character hex string
-included, takes about 115 ns on an Apple M4 Pro (-O3). Run the benchmark with:
+two characters per byte. `md5_hex_bench` times `MD5(data)` with its 32-character hex
+string against OpenSSL's MD5 through EVP, found by CMake when installed and linked by
+the benchmark only. OpenSSL 3 looks the algorithm up on every
+`EVP_DigestInit_ex(ctx, EVP_md5())`, so the table shows OpenSSL twice: with the lookup
+done once (`EVP_MD_fetch`) and with `EVP_md5()` on every call. ns per call, one thread,
+best of two runs of seven windows, Apple clang 17 with `-O3`:
+
+| Bytes | MD5 + hex | EVP + hex | EVP raw, `EVP_md5()` |
+| ---: | ---: | ---: | ---: |
+| 16 | 114 | 80 | 181 |
+| 64 | 171 | 142 | 246 |
+| 1,024 | 1,360 | 1,244 | 1,360 |
+| 65,536 | 82,700 | 75,300 | 76,300 |
+| 1,048,576 | 1,320,000 | 1,216,000 | 1,216,000 |
+
+Apple M4 Pro, OpenSSL 3.5.9.
+
+| Bytes | MD5 + hex | EVP + hex | EVP raw, `EVP_md5()` |
+| ---: | ---: | ---: | ---: |
+| 16 | 191 | 121 | 359 |
+| 64 | 275 | 196 | 434 |
+| 1,024 | 1,730 | 1,337 | 1,622 |
+| 65,536 | 100,100 | 77,800 | 78,200 |
+| 1,048,576 | 1,603,000 | 1,246,000 | 1,245,000 |
+
+Intel Core i9-9980HK, OpenSSL 3.6.5.
+
+OpenSSL's MD5 is faster once the lookup is out of the loop: 1.4x at 16 bytes and 1.1x from
+1 KiB up on the M4 Pro, 1.6x and 1.3x on the i9. The lookup costs OpenSSL 105 ns (M4 Pro)
+and 237 ns (i9) per call, which puts this MD5 ahead of `EVP_md5()` up to 64 bytes. Run the
+benchmark with:
 
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DMD5_BUILD_BENCH=ON && cmake --build build && ./build/md5_hex_bench

@@ -12,3 +12,6 @@ concurrency:
 jobs:
   ci:
     uses: Kronuz/cpp-libraries/.github/workflows/cmake.yml@main
+    with:
+      # test/openssl.cc checks MD5 against OpenSSL's EVP_md5 where OpenSSL is found.
+      apt_packages: libssl-dev

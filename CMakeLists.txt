@@ -40,11 +40,28 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   target_link_libraries(md5_test PRIVATE md5)
   add_test(NAME md5 COMMAND md5_test)
 
-  # Legacy MD5 string API timing: cmake -B build -DMD5_BUILD_BENCH=ON
+  # Against OpenSSL's EVP_md5 (an independent implementation) when OpenSSL is installed.
+  # The test exits 77 (skipped) where OpenSSL has no MD5.
+  find_package(OpenSSL QUIET COMPONENTS Crypto)
+  if(OpenSSL_FOUND)
+    add_executable(md5_openssl_test test/openssl.cc)
+    target_link_libraries(md5_openssl_test PRIVATE md5 OpenSSL::Crypto)
+    add_test(NAME md5_openssl COMMAND md5_openssl_test)
+    set_tests_properties(md5_openssl PROPERTIES SKIP_RETURN_CODE 77)
+  endif()
+
+  # Legacy MD5 string API timing, with OpenSSL EVP columns when OpenSSL is found:
+  # cmake -B build -DCMAKE_BUILD_TYPE=Release -DMD5_BUILD_BENCH=ON
   option(MD5_BUILD_BENCH "Build the hex-string benchmark" OFF)
   if(MD5_BUILD_BENCH)
     add_executable(md5_hex_bench bench/hex_bench.cc)
     target_link_libraries(md5_hex_bench PRIVATE md5)
+    if(OpenSSL_FOUND)
+      target_link_libraries(md5_hex_bench PRIVATE OpenSSL::Crypto)
+      target_compile_definitions(md5_hex_bench PRIVATE MD5_BENCH_OPENSSL)
+    else()
+      message(STATUS "md5_hex_bench: OpenSSL not found, the EVP columns are skipped")
+    endif()
   endif()
 
   # A runnable tour of the library (not a test): build & run ./build/md5_demo

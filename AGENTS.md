@@ -11,9 +11,10 @@ easy to fall into.
 md5.h                        Declares the MD5 class (call operators, add(), getHash(), reset()) and its private state. Header. Same as Xapiand's.
 md5.cc                       The implementation: block transform, streaming buffer, padding, length encoding, hex formatting. Includes "endian.hh" for the byte-order macros.
 test/test.cc                 Runnable smoke test: RFC 1321 vectors, (void*,size) overload, streaming, repeatable getHash(), reset/reuse, embedded NUL, long multi-block input, hex string against a frozen byte-at-a-time conversion.
-bench/hex_bench.cc           ns per MD5(data) call with its hex string (md5_hex_bench, -DMD5_BUILD_BENCH=ON).
+test/openssl.cc              Digests against OpenSSL's EVP_md5 (CTest `md5_openssl`, built when OpenSSL is found, exit 77 = skipped): every length to 1100, random lengths to 70000, random chunking with getHash() mid-stream, and streams past 2 MiB and 512 MiB for the upper bytes of the message length.
+bench/hex_bench.cc           ns per MD5(data) call with its hex string, plus OpenSSL EVP raw and EVP + hex columns when OpenSSL is found (md5_hex_bench, -DMD5_BUILD_BENCH=ON).
 examples/demo.cc             A runnable tour (not a test).
-CMakeLists.txt               Compiled library `md5` (+ alias md5::md5); FetchContent endian; CTest test `md5`.
+CMakeLists.txt               Compiled library `md5` (+ alias md5::md5); FetchContent endian; CTest tests `md5` and `md5_openssl`.
 LICENSE                      MIT, Copyright (c) 2015-2019 Dubalu LLC; portions (c) 2014,2015 Stephan Brumme.
 README.md                    What it is, install, quick start.
 docs/API.md                  The API reference.
@@ -43,7 +44,9 @@ consumers vendoring it via `FetchContent` won't build them.
 big-endian host. That header lives in the sibling
 [endian](https://github.com/Kronuz/endian) library, pulled in by CMake and linked
 `PUBLIC` so the include path resolves. This is the library's only dependency;
-there is no `log.h` / opts / config / `THROW` coupling.
+there is no `log.h` / opts / config / `THROW` coupling. OpenSSL is found, never
+fetched, and only `test/openssl.cc` and `bench/hex_bench.cc` link it; the library
+target does not.
 
 ## Not cryptography
 
