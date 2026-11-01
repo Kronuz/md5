@@ -85,21 +85,36 @@ Not for:
 
 ## ⚡ Performance
 
-`md5_hex_bench` times `MD5(data)` with its hex string against OpenSSL's MD5
-through EVP, which the benchmark links when CMake finds OpenSSL. OpenSSL 3 looks
-the algorithm up on every `EVP_DigestInit_ex(ctx, EVP_md5())`, so each cell is
-this MD5 with hex / OpenSSL with hex and the lookup done once (`EVP_MD_fetch`) /
-OpenSSL raw with `EVP_md5()` on every call. ns per call, one thread, best of two runs of
-seven windows, Apple clang 17 with `-O3`; OpenSSL 3.5.9 on the Apple M4 Pro and
-3.6.5 on the Intel Core i9-9980HK:
+`md5_hex_bench` times one call that takes a buffer and returns its 32-character hex string,
+on one thread, against [OpenSSL](https://www.openssl.org/)'s MD5 through its EVP interface
+(3.5.9 on the M4 Pro, 3.6.5 on the i9, both from Homebrew), which the benchmark links when
+CMake finds OpenSSL. OpenSSL returns 16 raw bytes, so the first comparator converts them to
+the same hex string, and each row checks that the two strings are equal. OpenSSL 3 looks the
+algorithm up on every `EVP_DigestInit_ex(ctx, EVP_md5())`, so there are two OpenSSL columns:
+`EVP_MD_fetch` looks `"MD5"` up once and the call is timed with the hex conversion, and
+`EVP_md5()` is the call most code writes, timed for the digest alone. Cells are ns per call,
+the better of two runs of seven windows; "× faster" is OpenSSL's time with hex over this
+library's, so a value below 1 is a loss.
 
-| Bytes | Apple M4 Pro | Intel Core i9-9980HK |
-| ---: | ---: | ---: |
-| 16 | 114 / 80 / 181 | 191 / 121 / 359 |
-| 64 | 171 / 142 / 246 | 275 / 196 / 434 |
-| 1,024 | 1,360 / 1,244 / 1,360 | 1,730 / 1,337 / 1,622 |
-| 65,536 | 82,700 / 75,300 / 76,300 | 100,100 / 77,800 / 78,200 |
-| 1,048,576 | 1,320,000 / 1,216,000 / 1,216,000 | 1,603,000 / 1,246,000 / 1,245,000 |
+Apple M4 Pro (macOS 26), Apple clang 17.0.0 with `-O3 -DNDEBUG` (CMake Release):
+
+| Bytes | `MD5` with hex | OpenSSL `EVP_MD_fetch` with hex | `MD5` × faster | OpenSSL `EVP_md5()`, digest only |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 114 | 80 | 0.70 | 181 |
+| 64 | 171 | 142 | 0.83 | 246 |
+| 1,024 | 1,360 | 1,244 | 0.91 | 1,360 |
+| 65,536 | 82,700 | 75,300 | 0.91 | 76,300 |
+| 1,048,576 | 1,320,000 | 1,216,000 | 0.92 | 1,216,000 |
+
+Intel Core i9-9980HK (macOS 15, x86-64), Apple clang 17.0.0 with `-O3 -DNDEBUG`:
+
+| Bytes | `MD5` with hex | OpenSSL `EVP_MD_fetch` with hex | `MD5` × faster | OpenSSL `EVP_md5()`, digest only |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 191 | 121 | 0.63 | 359 |
+| 64 | 275 | 196 | 0.71 | 434 |
+| 1,024 | 1,730 | 1,337 | 0.77 | 1,622 |
+| 65,536 | 100,100 | 77,800 | 0.78 | 78,200 |
+| 1,048,576 | 1,603,000 | 1,246,000 | 0.78 | 1,245,000 |
 
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DMD5_BUILD_BENCH=ON
@@ -107,8 +122,10 @@ cmake --build build
 ./build/md5_hex_bench
 ```
 
-The lookup costs OpenSSL 105 ns (M4 Pro) and 237 ns (i9) per call, which puts
-this MD5 ahead of `EVP_md5()` up to 64 bytes.
+With the algorithm fetched, OpenSSL is ahead on every row for the same hex string: 1.09 to
+1.43 times as fast on the M4 Pro and 1.29 to 1.58 times on the i9. The lookup in `EVP_md5()`
+costs OpenSSL 105 ns (M4 Pro) and 237 ns (i9) per call, which puts this MD5 ahead of that
+call up to 64 bytes.
 
 ## 📚 Documentation
 

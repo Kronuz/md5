@@ -1,8 +1,10 @@
 // MD5 string API: ns per call, input to 32-character hex string, on one thread.
 // Best of N windows; the first input byte changes every call so nothing folds.
-// With MD5_BENCH_OPENSSL the table adds OpenSSL EVP: the raw 16-byte digest with the algorithm
-// fetched once, the same plus the hex conversion, and the raw digest through EVP_md5().
-// Each row first checks that the hex strings agree.
+// With MD5_BENCH_OPENSSL the table adds OpenSSL EVP and prints the OpenSSL version it linked:
+//   EVP fetched  the 16-byte digest, with the algorithm looked up once (EVP_MD_fetch)
+//   + hex        the same, then converted to the 32-character hex string, so the output equals MD5's
+//   EVP_md5()    the 16-byte digest through EVP_md5(), which OpenSSL 3 looks up again on every call
+// Each row first checks that MD5's hex string equals the hex of OpenSSL's digest.
 // Usage: md5_hex_bench [windows]
 #include <algorithm>
 #include <chrono>
@@ -14,6 +16,7 @@
 #include "md5.h"
 
 #ifdef MD5_BENCH_OPENSSL
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #endif
 
@@ -71,6 +74,7 @@ int main(int argc, char** argv) {
 		EVP_DigestUpdate(ctx, data.data(), n);
 		EVP_DigestFinal_ex(ctx, out, &len);
 	};
+	std::printf("%s\n", OpenSSL_version(OPENSSL_VERSION));
 	std::printf("%8s | %12s | %12s %12s %12s | %s\n", "bytes", "MD5 hex", "EVP fetched", "+ hex", "EVP_md5()", "MD5 / (EVP fetched + hex)");
 #else
 	std::printf("%8s | %12s\n", "bytes", "MD5 hex");

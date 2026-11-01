@@ -27,6 +27,7 @@ Notable changes to `md5`, newest first. The format follows
 
 - The README's single timing (115 ns at 16 bytes) is replaced by tables for the Apple M4 Pro
   and the Intel i9-9980HK.
+- `md5_hex_bench` prints the OpenSSL version it linked, so a table names it.
 
 ## 2026-10-30
 
