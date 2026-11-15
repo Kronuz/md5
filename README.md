@@ -129,6 +129,8 @@ call up to 64 bytes.
 
 ## 📚 Documentation
 
+- [The Bag of Holding](https://kronuz.github.io/blog/bag-of-holding/):
+  the Familiars post that covers `md5` among the small helpers.
 - [docs/API.md](docs/API.md): the `MD5` class and caveats.
 - [ARCHITECTURE.md](ARCHITECTURE.md): buffering, the rounds, and finalization.
 - [CHANGELOG.md](CHANGELOG.md): what changed.
